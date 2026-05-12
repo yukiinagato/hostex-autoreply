@@ -56,7 +56,23 @@ export default function Thread({
                 : "bg-neutral-100 dark:bg-neutral-800"
             }`}
           >
-            {m.content}
+            {m.attachment_url && (
+              <a
+                href={m.attachment_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block mb-1"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={m.attachment_url}
+                  alt={m.content || "图片"}
+                  loading="lazy"
+                  className="max-w-full max-h-72 rounded object-cover"
+                />
+              </a>
+            )}
+            {m.content && <div>{m.content}</div>}
             <div className="mt-1 text-[10px] opacity-60">
               {senderLabel(m.sender)}
               {m.sent_via ? ` · ${viaLabel(m.sent_via)}` : ""}

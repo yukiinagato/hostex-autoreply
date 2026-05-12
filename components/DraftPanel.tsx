@@ -21,6 +21,9 @@ export default function DraftPanel({
   const [draft, setDraft] = useState<Draft | null>(initialDraft);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Local-only state: a pending image attached to the next Send.
+  const [pendingImage, setPendingImage] = useState<{ dataUrl: string; name: string; size: number } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const autoSendFiredRef = useRef(false);
 
   const { state, patch } = useDraftState(conversationId);
@@ -105,15 +108,18 @@ export default function DraftPanel({
     setBusy(true); setError(null);
     try {
       const text = textOverride ?? (editing ? draftText : (choice === "primary" ? draft.primary_text : draft.alternative_text));
+      const body: Record<string, unknown> = { text, source };
+      if (pendingImage) body.image = pendingImage.dataUrl;
       const r = await fetch(`/api/drafts/${draft.id}/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, source }),
+        body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error(`send failed: ${(await r.text()).slice(0, 200)}`);
       // Clear any in-progress edit / guidance — they applied to a draft that
       // is now sent and gone.
       patch({ edit_draft_id: null, edit_text: "", regen_guidance: "" });
+      setPendingImage(null);
       setDraft(null);
     } catch (e) {
       setError(String(e));
@@ -121,6 +127,25 @@ export default function DraftPanel({
     } finally {
       setBusy(false);
     }
+  }
+
+  async function onFilePicked(file: File) {
+    setError(null);
+    if (file.size > 15 * 1024 * 1024) {
+      setError("图片过大（>15MB），请压缩后再发。");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setError("仅支持图片文件。");
+      return;
+    }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error ?? new Error("read failed"));
+      r.readAsDataURL(file);
+    });
+    setPendingImage({ dataUrl, name: file.name, size: file.size });
   }
 
   async function regenerate() {
@@ -240,6 +265,24 @@ export default function DraftPanel({
         )}
       </div>
 
+      {pendingImage && (
+        <div className="flex items-start gap-2 rounded border border-neutral-200 dark:border-neutral-800 p-2 bg-neutral-50 dark:bg-neutral-950/50">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={pendingImage.dataUrl} alt="预览" className="w-20 h-20 object-cover rounded shrink-0" />
+          <div className="min-w-0 flex-1 text-xs">
+            <div className="truncate">{pendingImage.name}</div>
+            <div className="text-neutral-500">{Math.round(pendingImage.size / 1024)} KB</div>
+            <button
+              type="button"
+              onClick={() => setPendingImage(null)}
+              className="mt-1 text-[11px] text-red-600 hover:underline"
+            >
+              移除图片
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <button
           disabled={busy}
@@ -248,6 +291,25 @@ export default function DraftPanel({
         >
           {busy ? "发送中…" : "发送"}
         </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => fileInputRef.current?.click()}
+          className="text-sm rounded px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        >
+          📎 图片
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = ""; // allow re-selecting same file
+            if (f) void onFilePicked(f);
+          }}
+        />
         <button
           disabled={busy}
           onClick={() => patchDraft({ dismiss: true }).catch((e) => setError(String(e)))}

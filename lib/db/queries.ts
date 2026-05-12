@@ -172,11 +172,12 @@ export async function insertMessage(m: {
   hostex_msg_id?: string | null;
   sender: Message["sender"];
   content: string;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
   sent_via?: Message["sent_via"];
   created_at?: string;
 }): Promise<Message> {
   const db = getDb();
-  // upsert by hostex_msg_id if provided (idempotent ingestion)
   if (m.hostex_msg_id) {
     const existing = db.prepare("select * from messages where hostex_msg_id = ?").get(m.hostex_msg_id) as Message | undefined;
     if (existing) return existing;
@@ -184,9 +185,20 @@ export async function insertMessage(m: {
   const id = newId();
   const created = m.created_at ?? new Date().toISOString();
   db.prepare(
-    `insert into messages (id, conversation_id, hostex_msg_id, sender, content, sent_via, created_at)
-     values (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, m.conversation_id, m.hostex_msg_id ?? null, m.sender, m.content, m.sent_via ?? null, created);
+    `insert into messages
+       (id, conversation_id, hostex_msg_id, sender, content, attachment_url, attachment_type, sent_via, created_at)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    m.conversation_id,
+    m.hostex_msg_id ?? null,
+    m.sender,
+    m.content,
+    m.attachment_url ?? null,
+    m.attachment_type ?? null,
+    m.sent_via ?? null,
+    created,
+  );
   const row = db.prepare("select * from messages where id = ?").get(id) as Message;
   emitMessageInserted(m.conversation_id, row);
   emitConversationsChanged();

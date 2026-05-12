@@ -70,6 +70,8 @@ create table if not exists messages (
   hostex_msg_id text unique,
   sender text not null check (sender in ('guest','host','system')),
   content text not null,
+  attachment_url text,
+  attachment_type text,
   sent_via text check (sent_via in ('hostex','ai-auto','ai-manual')),
   created_at text not null default (datetime('now'))
 );

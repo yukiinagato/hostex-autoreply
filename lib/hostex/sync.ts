@@ -83,7 +83,8 @@ export async function syncConversationFromHostex(hostexConversationId: string | 
   let newGuestMessage = false;
   for (const m of msgs) {
     const n = normalizeMessage(m);
-    if (!n.content) continue;
+    // Skip rows that have neither text nor an attachment.
+    if (!n.content && !n.attachment_url) continue;
     if (n.hostex_msg_id && existingIds.has(n.hostex_msg_id)) continue;
 
     if (n.sender === "host" && n.hostex_msg_id) {
@@ -110,6 +111,8 @@ export async function syncConversationFromHostex(hostexConversationId: string | 
       hostex_msg_id: n.hostex_msg_id,
       sender: n.sender,
       content: n.content,
+      attachment_url: n.attachment_url,
+      attachment_type: n.attachment_type,
       sent_via: "hostex",
       created_at: n.created_at,
     });

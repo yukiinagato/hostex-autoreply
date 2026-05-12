@@ -59,6 +59,13 @@ function runMigrations(d: Database.Database) {
   if (!propCols.some((c) => c.name === "custom_context")) {
     d.exec("alter table properties add column custom_context text");
   }
+
+  const msgCols = d.prepare("pragma table_info(messages)").all() as { name: string }[];
+  const ensureMsg = (col: string, def: string) => {
+    if (!msgCols.some((c) => c.name === col)) d.exec(`alter table messages add column ${col} ${def}`);
+  };
+  ensureMsg("attachment_url", "text");
+  ensureMsg("attachment_type", "text");
 }
 
 function bootstrapAdmin(d: Database.Database) {

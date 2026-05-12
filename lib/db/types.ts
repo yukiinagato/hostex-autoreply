@@ -83,6 +83,11 @@ export type Message = {
   hostex_msg_id: string | null;
   sender: "guest" | "host" | "system";
   content: string;
+  /** Optional image / file URL attached to this message. Hostex CDN URL for
+   *  inbound messages; we don't currently store outbound attachments here. */
+  attachment_url: string | null;
+  /** Hostex's display_type hint when known: "Image", "Text", "Box"… */
+  attachment_type: string | null;
   sent_via: "hostex" | "ai-auto" | "ai-manual" | null;
   created_at: string;
 };

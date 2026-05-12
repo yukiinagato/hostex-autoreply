@@ -76,6 +76,8 @@ export function normalizeMessage(m: HostexMessage): {
   hostex_msg_id: string | null;
   sender: "guest" | "host" | "system";
   content: string;
+  attachment_url: string | null;
+  attachment_type: string | null;
   created_at: string;
 } {
   const role = (m.sender_role ?? m.sender ?? "guest").toString().toLowerCase();
@@ -84,13 +86,33 @@ export function normalizeMessage(m: HostexMessage): {
   const content = (m.content ?? m.text ?? m.message ?? "").toString();
   // Hostex injects metadata blobs as "guest" messages — most commonly
   // "Source: reservation_book" or similar single-line key/value strings.
-  // Reclassify as system so the AI ignores them and the UI shows them muted.
   if (
     sender === "guest" &&
     /^(source|channel|inquiry_source|origin)\s*:\s*\S+\s*$/i.test(content.trim())
   ) {
     sender = "system";
   }
+  // Pull out an attachment URL if present. Hostex's `attachment` field shape
+  // observed so far: either null, a bare URL string, or `{url, type}` /
+  // `{image_url}` / `{path}`. Be defensive about all of them.
+  const att = m.attachment as unknown;
+  let attachmentUrl: string | null = null;
+  if (typeof att === "string" && /^https?:\/\//.test(att)) {
+    attachmentUrl = att;
+  } else if (att && typeof att === "object") {
+    const obj = att as Record<string, unknown>;
+    const candidate =
+      (typeof obj.url === "string" && obj.url) ||
+      (typeof obj.image_url === "string" && obj.image_url) ||
+      (typeof obj.path === "string" && obj.path) ||
+      (typeof obj.href === "string" && obj.href) ||
+      "";
+    if (candidate && /^https?:\/\//.test(candidate)) attachmentUrl = candidate;
+  }
+  const displayType =
+    typeof (m as Record<string, unknown>).display_type === "string"
+      ? ((m as Record<string, unknown>).display_type as string)
+      : null;
   const ts = m.created_at ?? m.sent_at ?? (typeof m.timestamp === "number"
     ? new Date(m.timestamp * (m.timestamp > 1e12 ? 1 : 1000)).toISOString()
     : (m.timestamp as string | undefined)) ?? new Date().toISOString();
@@ -98,6 +120,8 @@ export function normalizeMessage(m: HostexMessage): {
     hostex_msg_id: m.id != null ? String(m.id) : null,
     sender,
     content,
+    attachment_url: attachmentUrl,
+    attachment_type: displayType,
     created_at: typeof ts === "string" ? ts : new Date(ts).toISOString(),
   };
 }
