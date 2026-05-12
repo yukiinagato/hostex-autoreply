@@ -64,9 +64,10 @@ export default function AppShell({
       </header>
 
       {/* Two-pane on desktop, single-pane on mobile.
-          pwa-safe-bottom keeps the iOS home indicator from sitting on top of
-          DraftPanel buttons when installed as a Home Screen app. */}
-      <div className="flex-1 min-h-0 grid lg:grid-cols-[18rem_1fr] pwa-safe-bottom pwa-safe-left pwa-safe-right">
+          Only side insets — bottom inset is handled per-component so the
+          home indicator can float over content (iMessage-style) instead of
+          leaving a black strip. */}
+      <div className="flex-1 min-h-0 grid lg:grid-cols-[18rem_1fr] pwa-safe-left pwa-safe-right">
         {/* Sidebar: always on lg+; on mobile only when on inbox */}
         <div className={`${isInbox ? "block" : "hidden"} lg:block min-h-0 overflow-hidden`}>
           <Sidebar initial={conversations} />

@@ -150,6 +150,7 @@ export default function ComposePanel({
           setOpen(true);
           setTimeout(() => textareaRef.current?.focus(), 0);
         }}
+        style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
         className="w-full text-left border rounded border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 text-sm text-neutral-500 hover:border-blue-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition"
       >
         <div className="flex items-center gap-2">
@@ -164,7 +165,10 @@ export default function ComposePanel({
   }
 
   return (
-    <div className="border rounded border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-3">
+    <div
+      className="border rounded border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-3"
+      style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+    >
       <div className="flex items-center gap-2">
         <span className="font-medium text-sm">主动消息</span>
         <span className="text-[11px] text-neutral-500">告诉 AI 你想写什么，它会生成两个候选</span>

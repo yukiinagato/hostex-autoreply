@@ -182,7 +182,10 @@ export default function DraftPanel({
   }
 
   return (
-    <div className="border rounded border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-3">
+    <div
+      className="border rounded border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-3"
+      style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
+    >
       <div className="flex items-center gap-3">
         <h2 className="font-medium">AI 草稿</h2>
         {draft.model_used && <span className="text-xs text-neutral-500">{draft.model_used}</span>}
