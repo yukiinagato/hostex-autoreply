@@ -13,6 +13,20 @@ create table if not exists users (
   created_at text not null default (datetime('now'))
 );
 
+-- Web Push subscriptions per user. The browser hands us an endpoint + key
+-- pair which we relay back via the standard Web Push protocol when there's
+-- a new guest message.
+create table if not exists push_subscriptions (
+  id integer primary key autoincrement,
+  user_id integer not null references users(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  user_agent text,
+  created_at text not null default (datetime('now'))
+);
+create index if not exists push_user_idx on push_subscriptions(user_id);
+
 -- Server-side sessions keyed by a random token stored in the host's cookie.
 create table if not exists sessions (
   token text primary key,

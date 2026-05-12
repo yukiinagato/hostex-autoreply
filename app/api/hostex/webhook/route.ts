@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { verifyWebhook } from "@/lib/hostex/webhook-signature";
 import { syncConversationFromHostex } from "@/lib/hostex/sync";
 import { generateDraftFor } from "@/lib/draft-engine";
+import { broadcastPush } from "@/lib/push";
+import { listMessages } from "@/lib/db/queries";
 
 export const runtime = "nodejs";
 
@@ -54,9 +56,30 @@ async function handleEvent(payload: WebhookPayload) {
     return;
   }
   if (result.newGuestMessage) {
+    // Notify all subscribed devices about the new guest message.
+    void notifyNewGuestMessage(result.conversation).catch((err) =>
+      console.error("[webhook] push notify failed", err),
+    );
     try { await generateDraftFor(result.conversation.id); }
     catch (err) { console.error("[webhook] draft generation failed", err); }
   } else {
     console.log("[webhook] no new guest message → no draft");
   }
+}
+
+async function notifyNewGuestMessage(conv: { id: string; guest_name: string | null; hostex_id: string }) {
+  // Use the latest guest message text as the notification body. If only an
+  // image arrived, body falls back to "[图片]".
+  const recent = await listMessages(conv.id, 5);
+  const lastGuest = [...recent].reverse().find((m) => m.sender === "guest");
+  const preview = lastGuest
+    ? (lastGuest.content?.trim() || (lastGuest.attachment_url ? "[图片]" : ""))
+    : "";
+
+  await broadcastPush({
+    title: conv.guest_name ?? `对话 ${conv.hostex_id}`,
+    body: preview.slice(0, 140),
+    tag: `conv-${conv.id}`,
+    url: `/conversations/${conv.id}`,
+  });
 }

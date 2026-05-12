@@ -5,6 +5,7 @@ import { getSettings } from "@/lib/db/queries";
 import SettingsForm from "@/components/SettingsForm";
 import ExportCard from "@/components/ExportCard";
 import MyProfileCard from "@/components/MyProfileCard";
+import PushSubscribeCard from "@/components/PushSubscribeCard";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default async function SettingsPage() {
           </div>
         </div>
         <MyProfileCard initial={me} />
+        <PushSubscribeCard />
         <SettingsForm initial={settings} />
         <ExportCard />
       </div>
