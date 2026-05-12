@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getConversation, getPendingDraft, getSettings } from "@/lib/db/queries";
+import { getConversation, getPendingDraft, getSettings, markConversationRead } from "@/lib/db/queries";
 import { findAdjacentReservations } from "@/lib/db/reservations-cache";
 import { loadConversationContext } from "@/lib/context-loader";
 import { syncConversationFromHostex } from "@/lib/hostex/sync";
@@ -22,6 +22,8 @@ export default async function ConvPage({ params }: { params: Promise<{ id: strin
     void syncConversationFromHostex(stored.hostex_id).catch((err) =>
       console.error("[page-resync] failed", err),
     );
+    // Opening a conversation counts as reading it.
+    void markConversationRead(id).catch(() => { /* ignore */ });
   }
 
   const [ctx, draft, settings] = await Promise.all([

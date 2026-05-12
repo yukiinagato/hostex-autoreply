@@ -8,8 +8,18 @@ import SearchModal from "./SearchModal";
 export default function Sidebar({ initial }: { initial: ConversationListItem[] }) {
   const [conversations, setConversations] = useState<ConversationListItem[]>(initial);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
   const pathname = usePathname();
   const esRef = useRef<EventSource | null>(null);
+
+  // Persist the unread-only filter across reloads.
+  useEffect(() => {
+    try { setUnreadOnly(localStorage.getItem("hxar.unreadOnly") === "1"); } catch { /* SSR */ }
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("hxar.unreadOnly", unreadOnly ? "1" : "0"); } catch { /* ignore */ }
+  }, [unreadOnly]);
 
   // Cmd/Ctrl + K opens search.
   useEffect(() => {
@@ -62,6 +72,33 @@ export default function Sidebar({ initial }: { initial: ConversationListItem[] }
     };
   }, []);
 
+  // A conversation is unread if its latest non-system message arrived after
+  // the host's last_read_at (or it has never been read).
+  const isUnreadOf = (c: ConversationListItem): boolean => {
+    if (c.last_msg_sender !== "guest") return false; // only guest msgs count
+    const last = c.last_msg_at ?? c.last_message_at;
+    if (!last) return false;
+    if (!c.last_read_at) return true;
+    return last > c.last_read_at;
+  };
+  const unreadCount = conversations.reduce((n, c) => n + (isUnreadOf(c) ? 1 : 0), 0);
+  const visible = unreadOnly ? conversations.filter(isUnreadOf) : conversations;
+
+  async function markAllRead() {
+    if (markingAll) return;
+    setMarkingAll(true);
+    try {
+      await fetch("/api/conversations/read-all", { method: "POST" });
+      const r = await fetch("/api/conversations", { cache: "no-store" });
+      if (r.ok) {
+        const json = await r.json();
+        setConversations(json.conversations as ConversationListItem[]);
+      }
+    } finally {
+      setMarkingAll(false);
+    }
+  }
+
   return (
     <>
     {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
@@ -79,19 +116,54 @@ export default function Sidebar({ initial }: { initial: ConversationListItem[] }
         </button>
         <span className="text-[10px] text-neutral-400">{conversations.length}</span>
       </div>
+      {/* Filter toolbar */}
+      <div className="px-3 py-1.5 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-1.5 text-xs">
+        <button
+          type="button"
+          onClick={() => setUnreadOnly((v) => !v)}
+          aria-pressed={unreadOnly}
+          className={`flex items-center gap-1 px-2 py-1 rounded-full transition-colors
+            ${unreadOnly
+              ? "bg-blue-600 text-white"
+              : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700"}`}
+        >
+          <span>未读</span>
+          {unreadCount > 0 && (
+            <span
+              className={`tabular-nums text-[10px] px-1.5 py-px rounded-full
+                ${unreadOnly ? "bg-white/25 text-white" : "bg-blue-600 text-white"}`}
+            >
+              {unreadCount}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          disabled={markingAll || unreadCount === 0}
+          onClick={markAllRead}
+          className="ml-auto text-[11px] text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 disabled:opacity-40 disabled:hover:text-neutral-500"
+          title="将所有对话标记为已读"
+        >
+          {markingAll ? "处理中…" : "全部已读"}
+        </button>
+      </div>
       <ul className="flex-1 overflow-y-auto overscroll-contain divide-y divide-neutral-100 dark:divide-neutral-800/70">
-        {conversations.length === 0 ? (
+        {visible.length === 0 ? (
           <li className="p-6 text-center text-xs text-neutral-500">
-            <div className="text-2xl mb-1">💬</div>
-            <div>暂无对话</div>
-            <div className="mt-1 text-[10px] text-neutral-400">客人发来新消息后会出现在这里</div>
+            <div className="text-2xl mb-1">{unreadOnly ? "🎉" : "💬"}</div>
+            <div>{unreadOnly ? "没有未读对话" : "暂无对话"}</div>
+            <div className="mt-1 text-[10px] text-neutral-400">
+              {unreadOnly
+                ? "所有客人消息都已查看"
+                : "客人发来新消息后会出现在这里"}
+            </div>
           </li>
         ) : (
-          conversations.map((c) => {
+          visible.map((c) => {
             const href = `/conversations/${c.id}`;
             const active = pathname === href;
             const dateRange = formatDateRange(c.check_in_date, c.check_out_date);
-            const isUnread = c.last_msg_sender === "guest";
+            const isUnread = isUnreadOf(c);
             const senderInfo = describeSender(c.last_msg_sender, c.last_msg_sent_via);
             return (
               <li key={c.id}>

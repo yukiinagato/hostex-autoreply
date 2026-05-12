@@ -46,6 +46,7 @@ function runMigrations(d: Database.Database) {
   ensure("channel_type", "text");
   ensure("check_in_date", "text");
   ensure("check_out_date", "text");
+  ensure("last_read_at", "text");
 
   const draftCols = d.prepare("pragma table_info(drafts)").all() as { name: string }[];
   const ensureDraft = (col: string, def: string) => {

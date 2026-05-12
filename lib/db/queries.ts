@@ -151,6 +151,38 @@ export async function upsertConversation(c: {
 
 // ----- messages -----
 
+/** Mark a single conversation as read (last_read_at = now). */
+export async function markConversationRead(conversationId: string): Promise<void> {
+  const now = new Date().toISOString();
+  const db = getDb();
+  db.prepare("update conversations set last_read_at = ? where id = ?").run(now, conversationId);
+  emitConversationsChanged();
+}
+
+/**
+ * Bulk mark every conversation as read. Sets last_read_at = now for any
+ * conversation whose most-recent non-system message is newer than the
+ * current last_read_at (or never read). Returns the count affected.
+ */
+export async function markAllConversationsRead(): Promise<number> {
+  const now = new Date().toISOString();
+  const db = getDb();
+  const r = db
+    .prepare(
+      `update conversations
+       set last_read_at = ?
+       where exists (
+         select 1 from messages m
+         where m.conversation_id = conversations.id
+           and m.sender != 'system'
+           and (conversations.last_read_at is null or m.created_at > conversations.last_read_at)
+       )`,
+    )
+    .run(now);
+  if (r.changes > 0) emitConversationsChanged();
+  return r.changes;
+}
+
 export async function listMessages(conversationId: string, limit = 50): Promise<Message[]> {
   // Get the LATEST `limit` messages (descending), then reorder ascending so
   // callers see them in chronological order.

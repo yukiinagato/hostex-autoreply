@@ -72,6 +72,9 @@ create table if not exists conversations (
   check_in_date text,
   check_out_date text,
   last_message_at text,
+  -- ISO timestamp the host last "read" this conversation. A conversation is
+  -- considered unread when the latest non-system message arrived after this.
+  last_read_at text,
   unread integer not null default 0,
   created_at text not null default (datetime('now'))
 );

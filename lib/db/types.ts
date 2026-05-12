@@ -49,6 +49,9 @@ export type Conversation = {
   check_in_date: string | null;
   check_out_date: string | null;
   last_message_at: string | null;
+  /** ISO timestamp; conversation is considered unread when the last non-system
+   *  message's created_at is later than this value (or this is null). */
+  last_read_at: string | null;
   unread: boolean;
   created_at: string;
 };
