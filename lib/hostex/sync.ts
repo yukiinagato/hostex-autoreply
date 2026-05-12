@@ -55,6 +55,18 @@ export async function syncConversationFromHostex(hostexConversationId: string | 
     [];
   const lastMsgAt = msgs[0]?.created_at ?? msgs[msgs.length - 1]?.created_at ?? new Date().toISOString();
 
+  // Diagnostic: surface any media-suggesting message whose attachment shape
+  // we couldn't parse. Once we see a real one we can adjust normalizeMessage.
+  for (const m of msgs) {
+    const r = m as Record<string, unknown>;
+    const isMedia =
+      (typeof r.display_type === "string" && /image|video|audio|file|attach/i.test(r.display_type)) ||
+      (r.attachment != null && r.attachment !== "");
+    if (isMedia) {
+      console.log("[sync] media message sample:", JSON.stringify(m).slice(0, 600));
+    }
+  }
+
   const conv = await upsertConversation({
     hostex_id: String(hostexConversationId),
     guest_name: guestName,
