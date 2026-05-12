@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 const COOKIE = "hxar_session";
 
@@ -12,11 +12,21 @@ export async function isAuthenticated(): Promise<boolean> {
 export async function setAuthCookie(value: string): Promise<boolean> {
   const expected = process.env.APP_PASSWORD;
   if (!expected || value !== expected) return false;
+  // Mark the cookie `Secure` only when the incoming request was HTTPS. In
+  // production over plain HTTP (self-hosted on LAN, behind a non-TLS proxy)
+  // setting Secure=true makes the browser drop the cookie and the user gets
+  // bounced back to /login forever.
+  const hdrs = await headers();
+  const forwardedProto = hdrs.get("x-forwarded-proto");
+  const isHttps =
+    forwardedProto === "https" ||
+    // Fallback for direct-served Next when no proxy header is present.
+    hdrs.get("x-forwarded-ssl") === "on";
   const c = await cookies();
   c.set(COOKIE, value, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
