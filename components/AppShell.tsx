@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
+import UserMenu from "./UserMenu";
 import type { ConversationListItem, User } from "@/lib/db/types";
 
 export default function AppShell({
@@ -45,21 +46,15 @@ export default function AppShell({
           Hostex 自动回复
         </Link>
         <span className="lg:hidden text-xs text-neutral-500 truncate">· {title}</span>
-        <nav className="ml-auto flex items-center gap-3 sm:gap-4 text-sm">
-          <Link href="/" className={`hover:underline ${isInbox ? "font-medium" : ""}`}>收件箱</Link>
-          <Link href="/settings" className={`hover:underline ${isSettings ? "font-medium" : ""}`}>设置</Link>
-          <form method="post" action="/api/auth/logout" className="flex items-center gap-1.5">
-            <span className="text-xs text-neutral-500 max-w-[6rem] sm:max-w-[10rem] truncate" title={user.username}>
-              {user.is_admin ? "👑 " : ""}{user.username}
-            </span>
-            <button
-              type="submit"
-              className="text-[11px] text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 underline"
-              title="退出登录"
-            >
-              退出
-            </button>
-          </form>
+        <nav className="ml-auto flex items-center gap-2 sm:gap-4 text-sm">
+          <Link
+            href="/"
+            className={`px-2 py-1 rounded transition hover:bg-neutral-100 dark:hover:bg-neutral-800
+              ${isInbox ? "font-medium text-neutral-900 dark:text-neutral-50" : "text-neutral-600 dark:text-neutral-400"}`}
+          >
+            收件箱
+          </Link>
+          <UserMenu user={user} />
         </nav>
       </header>
 

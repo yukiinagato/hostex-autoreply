@@ -6,13 +6,13 @@
 html, body { height: 100%; }
 body {
   @apply bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100;
-  /* Avoid iOS rubber-band overscroll for the whole document when running as
-     a standalone PWA. Individual scrollers still scroll within their bounds. */
   overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;     /* nicer mobile tap */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Respect the iPhone notch / Dynamic Island / home-indicator safe areas when
-   the user "Adds to Home Screen". When opened in Safari the values are 0. */
+/* Respect the iPhone notch / Dynamic Island / home-indicator safe areas. */
 @supports (padding: env(safe-area-inset-top)) {
   .pwa-safe-top    { padding-top: max(env(safe-area-inset-top), 0px); }
   .pwa-safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
@@ -26,4 +26,60 @@ input, textarea, select, button {
 }
 @media (min-width: 640px) {
   input, textarea, select, button { font-size: inherit; }
+}
+
+/* Consistent focus rings across the app — visible on keyboard nav, hidden on
+   mouse click (browsers handle :focus-visible properly). */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid theme(colors.blue.500 / 60%);
+  outline-offset: 2px;
+}
+
+/* Soften the default text-input borders + give them a clear focus state. */
+@layer components {
+  .input {
+    @apply w-full rounded border border-neutral-300 bg-white px-2.5 py-1.5
+      text-sm text-neutral-900 placeholder:text-neutral-400
+      transition-colors
+      focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20
+      dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100
+      dark:placeholder:text-neutral-500;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded
+      bg-blue-600 px-3 py-1.5 text-sm font-medium text-white
+      transition-colors hover:bg-blue-700
+      disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded
+      border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700
+      transition-colors hover:bg-neutral-100
+      disabled:opacity-50 disabled:cursor-not-allowed
+      dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 rounded
+      border border-red-300 px-3 py-1.5 text-sm text-red-700
+      transition-colors hover:bg-red-50
+      disabled:opacity-50 disabled:cursor-not-allowed
+      dark:border-red-700 dark:text-red-300 dark:hover:bg-red-950/30;
+  }
+  /* Compact spinner used inside buttons */
+  .spinner {
+    @apply inline-block h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin;
+  }
+}
+
+/* Subtle pulse for unread indicators. */
+@keyframes hxar-soft-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.65; transform: scale(1.1); }
+}
+.unread-dot {
+  animation: hxar-soft-pulse 2s ease-in-out infinite;
 }

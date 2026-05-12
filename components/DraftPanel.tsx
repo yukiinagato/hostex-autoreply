@@ -183,19 +183,26 @@ export default function DraftPanel({
 
   return (
     <div
-      className="border rounded border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-3"
+      className="border rounded-lg border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 space-y-3 shadow-sm"
       style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" }}
     >
       <div className="flex items-center gap-3">
-        <h2 className="font-medium">AI 草稿</h2>
-        {draft.model_used && <span className="text-xs text-neutral-500">{draft.model_used}</span>}
+        <h2 className="font-medium flex items-center gap-1.5">
+          <span className="text-base">✨</span>
+          <span>AI 草稿</span>
+        </h2>
+        {draft.model_used && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 tabular-nums">
+            {draft.model_used}
+          </span>
+        )}
         <div className="ml-auto flex items-center gap-2">
           {draft.auto_send_at && (
             <>
               <CountdownRing deadline={draft.auto_send_at} totalSeconds={countdownSeconds} />
               <button
                 onClick={cancelCountdown}
-                className="text-xs underline text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
+                className="text-xs underline decoration-dotted underline-offset-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100"
               >
                 取消自动发送
               </button>
@@ -204,7 +211,7 @@ export default function DraftPanel({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {(["primary", "alternative"] as const).map((k) => {
           const active = choice === k;
           const stance = k === "primary" ? draft.primary_stance : draft.alternative_stance;
@@ -214,27 +221,37 @@ export default function DraftPanel({
             <button
               key={k}
               type="button"
-              onClick={() => {
-                // Switch active candidate. If user was editing, drop the edit
-                // (it was for the previous candidate).
-                patch({ edit_choice: k, edit_draft_id: null, edit_text: "" });
-              }}
-              className={`text-left rounded border p-3 text-sm transition ${
-                active
-                  ? "border-blue-500 ring-2 ring-blue-500/30 bg-blue-50/50 dark:bg-blue-950/30"
-                  : "border-neutral-200 dark:border-neutral-700 hover:border-neutral-400"
-              }`}
+              onClick={() => patch({ edit_choice: k, edit_draft_id: null, edit_text: "" })}
+              className={`relative text-left rounded-lg border p-3 text-sm transition-all
+                ${active
+                  ? "border-blue-500 bg-blue-50/60 dark:bg-blue-950/30 shadow-sm ring-1 ring-blue-500/20"
+                  : "border-neutral-200 dark:border-neutral-700 hover:border-blue-300 dark:hover:border-blue-700/60 hover:bg-neutral-50 dark:hover:bg-neutral-800/30"}`}
             >
-              <div className="text-[10px] uppercase tracking-wide font-medium text-neutral-500 mb-1">
-                {k === "primary" ? "A" : "B"}{stance ? ` · ${stance}` : ""}
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span
+                  className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold transition
+                    ${active ? "bg-blue-600 text-white" : "bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300"}`}
+                >
+                  {k === "primary" ? "A" : "B"}
+                </span>
+                {stance && (
+                  <span className="text-[10px] tracking-wide text-neutral-500 dark:text-neutral-400">
+                    {stance}
+                  </span>
+                )}
+                {active && (
+                  <span className="ml-auto text-[10px] text-blue-600 dark:text-blue-400 font-medium">✓ 已选</span>
+                )}
               </div>
-              <div className="whitespace-pre-wrap">{text}</div>
+              <div className="whitespace-pre-wrap break-words text-neutral-800 dark:text-neutral-200 leading-relaxed">
+                {text}
+              </div>
               {translation && (
                 <div className="mt-2 pt-2 border-t border-dashed border-neutral-300 dark:border-neutral-700">
                   <div className="text-[10px] uppercase tracking-wide text-neutral-400 mb-0.5">
-                    中文翻译（仅供内部预览，不会发送）
+                    中文翻译（仅本地预览）
                   </div>
-                  <div className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-pre-wrap">
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400 whitespace-pre-wrap break-words leading-relaxed">
                     {translation}
                   </div>
                 </div>
@@ -248,11 +265,10 @@ export default function DraftPanel({
         {editing ? (
           <textarea
             value={draftText}
-            onChange={(e) =>
-              patch({ edit_draft_id: draft.id, edit_text: e.target.value })
-            }
+            onChange={(e) => patch({ edit_draft_id: draft.id, edit_text: e.target.value })}
             rows={4}
-            className="w-full text-sm rounded border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-2"
+            className="input resize-y"
+            placeholder="在这里编辑后发送…"
           />
         ) : (
           <button
@@ -261,20 +277,21 @@ export default function DraftPanel({
               const baseText = choice === "primary" ? draft.primary_text : draft.alternative_text;
               patch({ edit_draft_id: draft.id, edit_text: baseText });
             }}
-            className="text-xs underline text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-100"
+            className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 inline-flex items-center gap-1"
           >
-            发送前编辑
+            <span>✎</span>
+            <span className="underline decoration-dotted underline-offset-2">发送前编辑</span>
           </button>
         )}
       </div>
 
       {pendingImage && (
-        <div className="flex items-start gap-2 rounded border border-neutral-200 dark:border-neutral-800 p-2 bg-neutral-50 dark:bg-neutral-950/50">
+        <div className="flex items-start gap-3 rounded-lg border border-neutral-200 dark:border-neutral-800 p-2 bg-neutral-50 dark:bg-neutral-950/50">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={pendingImage.dataUrl} alt="预览" className="w-20 h-20 object-cover rounded shrink-0" />
           <div className="min-w-0 flex-1 text-xs">
-            <div className="truncate">{pendingImage.name}</div>
-            <div className="text-neutral-500">{Math.round(pendingImage.size / 1024)} KB</div>
+            <div className="truncate font-medium">{pendingImage.name}</div>
+            <div className="text-neutral-500 tabular-nums">{Math.round(pendingImage.size / 1024)} KB</div>
             <button
               type="button"
               onClick={() => setPendingImage(null)}
@@ -290,15 +307,16 @@ export default function DraftPanel({
         <button
           disabled={busy}
           onClick={() => send(editing ? "edited" : choice)}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm rounded px-3 py-1.5"
+          className="btn-primary"
         >
-          {busy ? "发送中…" : "发送"}
+          {busy && <span className="spinner" aria-hidden />}
+          {busy ? "发送中" : "发送"}
         </button>
         <button
           type="button"
           disabled={busy}
           onClick={() => fileInputRef.current?.click()}
-          className="text-sm rounded px-3 py-1.5 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          className="btn-secondary"
         >
           📎 图片
         </button>
@@ -309,21 +327,21 @@ export default function DraftPanel({
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
-            e.target.value = ""; // allow re-selecting same file
+            e.target.value = "";
             if (f) void onFilePicked(f);
           }}
         />
         <button
           disabled={busy}
           onClick={() => patchDraft({ dismiss: true }).catch((e) => setError(String(e)))}
-          className="text-sm rounded px-3 py-1.5 border border-neutral-300 dark:border-neutral-700"
+          className="btn-secondary ml-auto"
         >
           忽略
         </button>
       </div>
 
       <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800">
-        <label className="text-xs text-neutral-500 block mb-1">基于额外提示重新生成（可选）</label>
+        <label className="text-xs text-neutral-500 block mb-1.5">基于额外提示重新生成（可选）</label>
         <div className="flex gap-2">
           <input
             value={guidance}
@@ -335,19 +353,20 @@ export default function DraftPanel({
               }
             }}
             placeholder="例如：可以加收 1000 日元提供 14 点入住"
-            className="flex-1 text-sm rounded border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1.5"
+            className="input flex-1"
           />
-          <button
-            disabled={busy}
-            onClick={regenerate}
-            className="text-sm rounded px-3 py-1.5 border border-neutral-300 dark:border-neutral-700"
-          >
+          <button disabled={busy} onClick={regenerate} className="btn-secondary shrink-0">
+            {busy && <span className="spinner" aria-hidden />}
             重新生成
           </button>
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 px-3 py-2 text-xs text-red-700 dark:text-red-300 break-words">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

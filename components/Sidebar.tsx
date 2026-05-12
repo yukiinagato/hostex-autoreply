@@ -79,9 +79,13 @@ export default function Sidebar({ initial }: { initial: ConversationListItem[] }
         </button>
         <span className="text-[10px] text-neutral-400">{conversations.length}</span>
       </div>
-      <ul className="flex-1 overflow-y-auto overscroll-contain">
+      <ul className="flex-1 overflow-y-auto overscroll-contain divide-y divide-neutral-100 dark:divide-neutral-800/70">
         {conversations.length === 0 ? (
-          <li className="p-3 text-xs text-neutral-500">暂无对话。</li>
+          <li className="p-6 text-center text-xs text-neutral-500">
+            <div className="text-2xl mb-1">💬</div>
+            <div>暂无对话</div>
+            <div className="mt-1 text-[10px] text-neutral-400">客人发来新消息后会出现在这里</div>
+          </li>
         ) : (
           conversations.map((c) => {
             const href = `/conversations/${c.id}`;
@@ -93,64 +97,69 @@ export default function Sidebar({ initial }: { initial: ConversationListItem[] }
               <li key={c.id}>
                 <Link
                   href={href}
-                  className={`block px-3 py-2.5 border-l-2 ${
-                    active
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                      : "border-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
-                  }`}
+                  className={`relative block px-3 py-2.5 transition-colors min-h-[3.25rem]
+                    ${active
+                      ? "bg-blue-50/70 dark:bg-blue-950/30"
+                      : "hover:bg-neutral-50 dark:hover:bg-neutral-800/40 active:bg-neutral-100 dark:active:bg-neutral-800/60"}`}
                 >
+                  {active && (
+                    <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-500" aria-hidden />
+                  )}
                   {/* Row 1: guest name + last activity */}
                   <div className="flex items-baseline gap-2">
                     {isUnread && (
                       <span
-                        className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"
+                        className="unread-dot inline-block w-2 h-2 rounded-full bg-blue-500 shrink-0"
                         aria-label="未读"
                       />
                     )}
                     <span
-                      className={`text-sm truncate flex-1 ${isUnread ? "font-semibold" : "font-medium"}`}
+                      className={`text-sm truncate flex-1 ${isUnread ? "font-semibold text-neutral-900 dark:text-neutral-50" : "font-medium text-neutral-700 dark:text-neutral-300"}`}
                     >
                       {c.guest_name ?? "（暂无姓名）"}
                     </span>
                     {(c.last_msg_at || c.last_message_at) && (
-                      <span className="text-[10px] text-neutral-400 shrink-0">
+                      <span className="text-[10px] text-neutral-400 shrink-0 tabular-nums">
                         {timeAgo((c.last_msg_at ?? c.last_message_at)!)}
                       </span>
                     )}
                   </div>
 
-                  {/* Row 2: last-message preview with sender icon */}
+                  {/* Row 2: last-message preview */}
                   {c.last_msg_content ? (
                     <div className="flex items-start gap-1.5 mt-1 min-w-0">
                       <span
                         className="text-[11px] shrink-0 leading-[1.3]"
                         title={senderInfo.tooltip}
+                        aria-hidden
                       >
                         {senderInfo.icon}
                       </span>
-                      <span className="text-xs text-neutral-600 dark:text-neutral-400 truncate min-w-0">
+                      <span
+                        className={`text-xs truncate min-w-0
+                          ${isUnread ? "text-neutral-800 dark:text-neutral-200" : "text-neutral-500 dark:text-neutral-400"}`}
+                      >
                         {c.last_msg_content}
                       </span>
                     </div>
                   ) : null}
 
-                  {/* Row 3: property name */}
-                  <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 truncate">
-                    🏠 {c.property_name ?? c.property_hostex_id ?? "未关联房源"}
-                  </div>
-
-                  {/* Row 4: channel + reservation dates */}
-                  <div className="flex items-center gap-2 text-[11px] text-neutral-500 mt-0.5 truncate">
+                  {/* Row 3: property + channel + dates collapsed onto one line */}
+                  <div className="flex items-center gap-2 text-[11px] text-neutral-500 dark:text-neutral-500 mt-1 min-w-0">
+                    <span className="truncate flex-1" title={c.property_name ?? c.property_hostex_id ?? "未关联房源"}>
+                      🏠 {c.property_name ?? c.property_hostex_id ?? "未关联房源"}
+                    </span>
                     {c.channel_type && (
-                      <span className="px-1 py-px rounded bg-neutral-100 dark:bg-neutral-800 text-[10px]">
+                      <span className="shrink-0 px-1 py-px rounded bg-neutral-100 dark:bg-neutral-800 text-[10px] text-neutral-600 dark:text-neutral-400">
                         {prettyChannel(c.channel_type)}
                       </span>
                     )}
-                    {dateRange && <span>📅 {dateRange}</span>}
-                    {!c.channel_type && !dateRange && c.reservation_hostex_id && (
-                      <span>{c.reservation_hostex_id}</span>
-                    )}
                   </div>
+                  {dateRange && (
+                    <div className="text-[10px] text-neutral-400 mt-0.5 tabular-nums">
+                      📅 {dateRange}
+                    </div>
+                  )}
                 </Link>
               </li>
             );
