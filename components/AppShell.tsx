@@ -2,13 +2,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
-import type { ConversationListItem } from "@/lib/db/types";
+import type { ConversationListItem, User } from "@/lib/db/types";
 
 export default function AppShell({
   conversations,
+  user,
   children,
 }: {
   conversations: ConversationListItem[];
+  user: User;
   children: React.ReactNode;
 }) {
   const pathname = usePathname() ?? "/";
@@ -42,9 +44,21 @@ export default function AppShell({
           Hostex 自动回复
         </Link>
         <span className="lg:hidden text-xs text-neutral-500 truncate">· {title}</span>
-        <nav className="ml-auto flex gap-3 sm:gap-4 text-sm">
+        <nav className="ml-auto flex items-center gap-3 sm:gap-4 text-sm">
           <Link href="/" className={`hover:underline ${isInbox ? "font-medium" : ""}`}>收件箱</Link>
           <Link href="/settings" className={`hover:underline ${isSettings ? "font-medium" : ""}`}>设置</Link>
+          <form method="post" action="/api/auth/logout" className="flex items-center gap-1.5">
+            <span className="text-xs text-neutral-500 max-w-[6rem] sm:max-w-[10rem] truncate" title={user.username}>
+              {user.is_admin ? "👑 " : ""}{user.username}
+            </span>
+            <button
+              type="submit"
+              className="text-[11px] text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 underline"
+              title="退出登录"
+            >
+              退出
+            </button>
+          </form>
         </nav>
       </header>
 

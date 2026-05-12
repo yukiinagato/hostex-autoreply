@@ -1,3 +1,21 @@
+export type User = {
+  id: number;
+  username: string;
+  message_suffix: string;
+  is_admin: boolean;
+  created_at: string;
+};
+
+/** Internal-only — includes the hash; never expose to the client. */
+export type UserWithHash = User & { password_hash: string };
+
+export type Session = {
+  token: string;
+  user_id: number;
+  expires_at: string;
+  created_at: string;
+};
+
 export type Settings = {
   id: 1;
   hostex_token: string | null;

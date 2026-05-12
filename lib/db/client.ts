@@ -1,4 +1,5 @@
 import Database from "better-sqlite3";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -21,7 +22,16 @@ export function getDb(): Database.Database {
   runMigrations(instance);
 
   db = instance;
+
+  // Bootstrap an admin user from APP_PASSWORD on a fresh DB.
+  bootstrapAdmin(instance);
+
   return db;
+}
+
+export function newId(): string {
+  // Simple UUID v4-ish (16 random bytes hex). crypto.randomUUID also works.
+  return crypto.randomUUID();
 }
 
 function runMigrations(d: Database.Database) {
@@ -51,7 +61,25 @@ function runMigrations(d: Database.Database) {
   }
 }
 
-export function newId(): string {
-  // Simple UUID v4-ish (16 random bytes hex). crypto.randomUUID also works.
-  return crypto.randomUUID();
+function bootstrapAdmin(d: Database.Database) {
+  const count = (d.prepare("select count(*) as n from users").get() as { n: number }).n;
+  if (count > 0) return;
+  const pw = process.env.APP_PASSWORD;
+  const username = process.env.APP_ADMIN_USERNAME ?? "admin";
+  if (!pw) {
+    console.warn(
+      "[boot] No users in DB and no APP_PASSWORD set — login page is unreachable until you create a user.",
+    );
+    return;
+  }
+  // Inline password hash so this file doesn't need to import users.ts (which
+  // would create a circular import).
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(pw, salt, 64).toString("hex");
+  const passwordHash = `s1$${salt}$${hash}`;
+  d.prepare("insert into users (username, password_hash, is_admin) values (?, ?, 1)").run(
+    username,
+    passwordHash,
+  );
+  console.log(`[boot] Created admin user "${username}" from APP_PASSWORD.`);
 }

@@ -1,5 +1,29 @@
 -- SQLite schema for hostex-autoreply. Auto-applied on first DB open.
 
+-- Host users. Each one logs in with a username + password and may have an
+-- optional message_suffix that is appended (on a new line) to every message
+-- they send manually. The very first user — auto-created from the APP_PASSWORD
+-- env on a fresh DB — gets is_admin=1; admins can CRUD other users.
+create table if not exists users (
+  id integer primary key autoincrement,
+  username text unique not null,
+  password_hash text not null,
+  message_suffix text not null default '',
+  is_admin integer not null default 0,
+  created_at text not null default (datetime('now'))
+);
+
+-- Server-side sessions keyed by a random token stored in the host's cookie.
+create table if not exists sessions (
+  token text primary key,
+  user_id integer not null references users(id) on delete cascade,
+  expires_at text not null,
+  created_at text not null default (datetime('now'))
+);
+
+create index if not exists sessions_user_idx on sessions(user_id);
+create index if not exists sessions_expires_idx on sessions(expires_at);
+
 create table if not exists settings (
   id integer primary key check (id = 1),
   hostex_token text,
