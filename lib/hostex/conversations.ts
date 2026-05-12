@@ -72,6 +72,25 @@ export async function sendMessage(
   });
 }
 
+function findFirstHttpUrl(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === "string") return /^https?:\/\//i.test(v) ? v : null;
+  if (Array.isArray(v)) {
+    for (const item of v) {
+      const u = findFirstHttpUrl(item);
+      if (u) return u;
+    }
+    return null;
+  }
+  if (typeof v === "object") {
+    for (const val of Object.values(v as Record<string, unknown>)) {
+      const u = findFirstHttpUrl(val);
+      if (u) return u;
+    }
+  }
+  return null;
+}
+
 export function normalizeMessage(m: HostexMessage): {
   hostex_msg_id: string | null;
   sender: "guest" | "host" | "system";
@@ -92,27 +111,18 @@ export function normalizeMessage(m: HostexMessage): {
   ) {
     sender = "system";
   }
-  // Pull out an attachment URL if present. Hostex's `attachment` field shape
-  // observed so far: either null, a bare URL string, or `{url, type}` /
-  // `{image_url}` / `{path}`. Be defensive about all of them.
-  const att = m.attachment as unknown;
-  let attachmentUrl: string | null = null;
-  if (typeof att === "string" && /^https?:\/\//.test(att)) {
-    attachmentUrl = att;
-  } else if (att && typeof att === "object") {
-    const obj = att as Record<string, unknown>;
-    const candidate =
-      (typeof obj.url === "string" && obj.url) ||
-      (typeof obj.image_url === "string" && obj.image_url) ||
-      (typeof obj.path === "string" && obj.path) ||
-      (typeof obj.href === "string" && obj.href) ||
-      "";
-    if (candidate && /^https?:\/\//.test(candidate)) attachmentUrl = candidate;
-  }
+  // Per Hostex docs, message has display_type ∈
+  //   "Text" | "Box" | "FileAttachment" | "RequestToBook" | "BsRequestBook" |
+  //   "SpecialOffer" | "ReservationAlteration" | "HouseLinkCard"
+  // and `attachment` is `object | null` with NO documented sub-structure. So
+  // we recursively walk whatever shape they happen to send and pull out the
+  // first https URL — works regardless of which key (url / image_url / path /
+  // media_url / file_url …) the platform decides to use.
   const displayType =
     typeof (m as Record<string, unknown>).display_type === "string"
       ? ((m as Record<string, unknown>).display_type as string)
       : null;
+  const attachmentUrl = findFirstHttpUrl(m.attachment);
   const ts = m.created_at ?? m.sent_at ?? (typeof m.timestamp === "number"
     ? new Date(m.timestamp * (m.timestamp > 1e12 ? 1 : 1000)).toISOString()
     : (m.timestamp as string | undefined)) ?? new Date().toISOString();

@@ -55,15 +55,15 @@ export async function syncConversationFromHostex(hostexConversationId: string | 
     [];
   const lastMsgAt = msgs[0]?.created_at ?? msgs[msgs.length - 1]?.created_at ?? new Date().toISOString();
 
-  // Diagnostic: surface any media-suggesting message whose attachment shape
-  // we couldn't parse. Once we see a real one we can adjust normalizeMessage.
+  // Per Hostex docs the only "media" display_type is "FileAttachment"; we
+  // also log anything with a non-empty attachment object so we can tighten
+  // the URL parser if Hostex adds new payload shapes.
   for (const m of msgs) {
     const r = m as Record<string, unknown>;
-    const isMedia =
-      (typeof r.display_type === "string" && /image|video|audio|file|attach/i.test(r.display_type)) ||
-      (r.attachment != null && r.attachment !== "");
-    if (isMedia) {
-      console.log("[sync] media message sample:", JSON.stringify(m).slice(0, 600));
+    const dt = typeof r.display_type === "string" ? r.display_type : "";
+    const hasAttachment = r.attachment != null && r.attachment !== "";
+    if (dt === "FileAttachment" || hasAttachment) {
+      console.log("[sync] attachment message:", JSON.stringify(m).slice(0, 800));
     }
   }
 
