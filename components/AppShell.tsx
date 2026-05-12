@@ -26,8 +26,9 @@ export default function AppShell({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Top bar */}
-      <header className="h-12 shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 flex items-center gap-3 bg-white/80 dark:bg-neutral-900/80 backdrop-blur">
+      {/* Top bar — safe-area-top so the notch / Dynamic Island doesn't sit on
+          top of the buttons when running as a standalone PWA. */}
+      <header className="shrink-0 border-b border-neutral-200 dark:border-neutral-800 px-3 flex items-center gap-3 bg-white/80 dark:bg-neutral-900/80 backdrop-blur pwa-safe-top pwa-safe-left pwa-safe-right" style={{ minHeight: 48 }}>
         {/* Back arrow on mobile when not on inbox */}
         {!isInbox && (
           <Link
@@ -62,8 +63,10 @@ export default function AppShell({
         </nav>
       </header>
 
-      {/* Two-pane on desktop, single-pane on mobile */}
-      <div className="flex-1 min-h-0 grid lg:grid-cols-[18rem_1fr]">
+      {/* Two-pane on desktop, single-pane on mobile.
+          pwa-safe-bottom keeps the iOS home indicator from sitting on top of
+          DraftPanel buttons when installed as a Home Screen app. */}
+      <div className="flex-1 min-h-0 grid lg:grid-cols-[18rem_1fr] pwa-safe-bottom pwa-safe-left pwa-safe-right">
         {/* Sidebar: always on lg+; on mobile only when on inbox */}
         <div className={`${isInbox ? "block" : "hidden"} lg:block min-h-0 overflow-hidden`}>
           <Sidebar initial={conversations} />

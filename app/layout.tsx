@@ -4,13 +4,28 @@ import type { Metadata, Viewport } from "next";
 export const metadata: Metadata = {
   title: "Hostex 自动回复",
   description: "Hostex 客服 AI 协助回复工具",
+  applicationName: "Hostex 自动回复",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Hostex 回复",
+    statusBarStyle: "black-translucent",
+  },
+  // Hint to Safari that this site behaves well as a standalone app.
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#0a0a0a",
+  // Edge-to-edge: lets the app paint under the notch / home indicator so we
+  // can add safe-area padding ourselves where it matters.
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

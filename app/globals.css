@@ -4,4 +4,26 @@
 
 :root { color-scheme: light dark; }
 html, body { height: 100%; }
-body { @apply bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100; }
+body {
+  @apply bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100;
+  /* Avoid iOS rubber-band overscroll for the whole document when running as
+     a standalone PWA. Individual scrollers still scroll within their bounds. */
+  overscroll-behavior-y: none;
+}
+
+/* Respect the iPhone notch / Dynamic Island / home-indicator safe areas when
+   the user "Adds to Home Screen". When opened in Safari the values are 0. */
+@supports (padding: env(safe-area-inset-top)) {
+  .pwa-safe-top    { padding-top: max(env(safe-area-inset-top), 0px); }
+  .pwa-safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+  .pwa-safe-left   { padding-left: max(env(safe-area-inset-left), 0px); }
+  .pwa-safe-right  { padding-right: max(env(safe-area-inset-right), 0px); }
+}
+
+/* Prevent iOS from auto-zooming into form fields with <16px text. */
+input, textarea, select, button {
+  font-size: 16px;
+}
+@media (min-width: 640px) {
+  input, textarea, select, button { font-size: inherit; }
+}
